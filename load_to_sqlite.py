@@ -86,7 +86,7 @@ CREATE TABLE Player_Plays_For (
     Player_ID INTEGER PRIMARY KEY,
     Name      TEXT NOT NULL,
     DOB       TEXT,
-    Salary    REAL,
+    Market_Value REAL,
     Goals     INTEGER,
     Club_Name TEXT,
     FOREIGN KEY (Club_Name) REFERENCES Club_Teams_Belongs_To(Name)
