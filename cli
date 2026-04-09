@@ -1,0 +1,685 @@
+import sqlite3
+
+DB_PATH = "/Users/maggiefarra/Desktop/pitch_perfect-2.db"
+
+def connect():
+    return sqlite3.connect(DB_PATH)
+
+
+# LEAGUE OPTIONS
+
+def view_all_leagues():
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM League")
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No leagues found.")
+        return
+    print("\n{:<30} {:<20} {:<10}".format("League Name", "Country", "# Teams"))
+    print("-" * 60)
+    for row in rows:
+        print("{:<30} {:<20} {:<10}".format(str(row[0]), str(row[1]), str(row[2])))
+
+def view_leagues_by_country():
+    country = input("Enter country: ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM League WHERE Country LIKE ?", ('%' + country + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No leagues found for that country.")
+        return
+    print("\n{:<30} {:<20} {:<10}".format("League Name", "Country", "# Teams"))
+    print("-" * 60)
+    for row in rows:
+        print("{:<30} {:<20} {:<10}".format(str(row[0]), str(row[1]), str(row[2])))
+
+def view_tournament_winners_by_year():
+    year = input("Enter year (or press Enter to view all): ")
+    conn = connect()
+    cursor = conn.cursor()
+    if year.strip() == "":
+        cursor.execute("""
+            SELECT t.Name, t.Year, t.League_Name, t.Winner
+            FROM League_Tournament_Has t
+            ORDER BY t.Year DESC
+        """)
+    else:
+        cursor.execute("""
+            SELECT t.Name, t.Year, t.League_Name, t.Winner
+            FROM League_Tournament_Has t
+            WHERE t.Year = ?
+            ORDER BY t.Year DESC
+        """, (year,))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No tournaments found.")
+        return
+    print("\n{:<25} {:<6} {:<25} {:<20}".format("Tournament", "Year", "League", "Winner"))
+    print("-" * 80)
+    for row in rows:
+        print("{:<25} {:<6} {:<25} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3])))
+
+
+
+# CLUB OPTIONS
+
+
+def view_all_clubs():
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Club_Teams_Belongs_To")
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No clubs found.")
+        return
+    print("\n{:<25} {:<20} {:<10} {:<10} {:<20}".format("Club Name", "Location", "Players", "Wins", "League"))
+    print("-" * 85)
+    for row in rows:
+        print("{:<25} {:<20} {:<10} {:<10} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])))
+
+def search_club_by_name():
+    name = input("Enter club name (or part of it): ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Club_Teams_Belongs_To WHERE Name LIKE ?", ('%' + name + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No clubs found.")
+        return
+    print("\n{:<25} {:<20} {:<10} {:<10} {:<20}".format("Club Name", "Location", "Players", "Wins", "League"))
+    print("-" * 85)
+    for row in rows:
+        print("{:<25} {:<20} {:<10} {:<10} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])))
+
+def view_clubs_by_league():
+    league = input("Enter league name (or part of it): ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Club_Teams_Belongs_To WHERE League_Name LIKE ?", ('%' + league + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No clubs found for that league.")
+        return
+    print("\n{:<25} {:<20} {:<10} {:<10} {:<20}".format("Club Name", "Location", "Players", "Wins", "League"))
+    print("-" * 85)
+    for row in rows:
+        print("{:<25} {:<20} {:<10} {:<10} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])))
+
+def view_clubs_by_location():
+    location = input("Enter location (or part of it): ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Club_Teams_Belongs_To WHERE Location LIKE ?", ('%' + location + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No clubs found in that location.")
+        return
+    print("\n{:<25} {:<20} {:<10} {:<10} {:<20}".format("Club Name", "Location", "Players", "Wins", "League"))
+    print("-" * 85)
+    for row in rows:
+        print("{:<25} {:<20} {:<10} {:<10} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])))
+
+def view_top_clubs_by_wins():
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Name, Location, Number_Of_Wins, League_Name
+        FROM Club_Teams_Belongs_To
+        ORDER BY Number_Of_Wins DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No clubs found.")
+        return
+    print("\n{:<25} {:<20} {:<10} {:<20}".format("Club Name", "Location", "Wins", "League"))
+    print("-" * 75)
+    for row in rows:
+        print("{:<25} {:<20} {:<10} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3])))
+
+
+
+# PLAYER OPTIONS
+
+
+
+def search_player_by_name():
+    name = input("Enter player name (or part of it): ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.Player_ID, p.Name, p.DOB, p.Salary, p.Goals, p.Club_Name, pp.Position
+        FROM Player_Plays_For p
+        LEFT JOIN Player_Position pp ON p.Player_ID = pp.Player_ID
+        WHERE p.Name LIKE ?
+    """, ('%' + name + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No players found.")
+        return
+    print("\n{:<10} {:<25} {:<12} {:<12} {:<8} {:<20} {:<15}".format("ID", "Name", "DOB", "Salary", "Goals", "Club", "Position"))
+    print("-" * 105)
+    for row in rows:
+        print("{:<10} {:<25} {:<12} {:<12} {:<8} {:<20} {:<15}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]), str(row[5]), str(row[6])))
+
+
+def view_top_scorers():
+    limit = input("How many players would you like to see? ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Player_ID, Name, Goals, Club_Name
+        FROM Player_Plays_For
+        WHERE Goals > 100
+        ORDER BY Goals DESC
+        LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No players found with more than 100 goals.")
+        return
+    print("\n{:<10} {:<25} {:<8} {:<20}".format("ID", "Name", "Goals", "Club"))
+    print("-" * 65)
+    for row in rows:
+        print("{:<10} {:<25} {:<8} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3])))
+
+def view_highest_paid_players():
+    limit = input("How many players would you like to see? ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Player_ID, Name, Salary, Goals, Club_Name
+        FROM Player_Plays_For
+        ORDER BY Salary DESC
+        LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No players found.")
+        return
+    print("\n{:<10} {:<25} {:<15} {:<8} {:<20}".format("ID", "Name", "Salary", "Goals", "Club"))
+    print("-" * 80)
+    for row in rows:
+        print("{:<10} {:<25} {:<15} {:<8} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])))
+
+def view_players_by_age():
+    limit = input("How many players would you like to see? ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Player_ID, Name, DOB, Goals, Club_Name
+        FROM Player_Plays_For
+        ORDER BY DOB ASC
+        LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No players found.")
+        return
+    print("\n{:<10} {:<25} {:<12} {:<8} {:<20}".format("ID", "Name", "DOB", "Goals", "Club"))
+    print("-" * 78)
+    for row in rows:
+        print("{:<10} {:<25} {:<12} {:<8} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])))
+
+def view_all_players():
+    limit = input("How many players would you like to see? ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Player_ID, Name, DOB, Salary, Goals, Club_Name
+        FROM Player_Plays_For
+        ORDER BY Name
+        LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No players found.")
+        return
+    print("\n{:<10} {:<25} {:<12} {:<12} {:<8} {:<20}".format("ID", "Name", "DOB", "Salary", "Goals", "Club"))
+    print("-" * 90)
+    for row in rows:
+        print("{:<10} {:<25} {:<12} {:<12} {:<8} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]), str(row[5])))
+
+def view_players_by_club():
+    club = input("Enter club name (or part of it): ")
+    limit = input("How many players would you like to see? ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.Player_ID, p.Name, p.DOB, p.Salary, p.Goals, p.Club_Name
+        FROM Player_Plays_For p
+        WHERE p.Club_Name LIKE ?
+        ORDER BY p.Goals DESC
+        LIMIT ?
+    """, ('%' + club + '%', limit))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No players found for that club.")
+        return
+    print("\n{:<10} {:<25} {:<12} {:<12} {:<8} {:<20}".format("ID", "Name", "DOB", "Salary", "Goals", "Club"))
+    print("-" * 90)
+    for row in rows:
+        print("{:<10} {:<25} {:<12} {:<12} {:<8} {:<20}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]), str(row[5])))
+
+def view_players_by_position():
+    position = input("Enter position (e.g. Forward, Midfielder, Defender, Goalkeeper): ")
+    limit = input("How many players would you like to see? ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.Player_ID, p.Name, p.Goals, p.Club_Name, pp.Position
+        FROM Player_Plays_For p
+        JOIN Player_Position pp ON p.Player_ID = pp.Player_ID
+        WHERE pp.Position LIKE ?
+        ORDER BY p.Goals DESC
+        LIMIT ?
+    """, ('%' + position + '%', limit))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No players found for that position.")
+        return
+    print("\n{:<10} {:<25} {:<8} {:<20} {:<15}".format("ID", "Name", "Goals", "Club", "Position"))
+    print("-" * 80)
+    for row in rows:
+        print("{:<10} {:<25} {:<8} {:<20} {:<15}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])))
+
+
+def view_player_awards():
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT i.Name, i.Year, p.Name, i.Player_ID
+        FROM Individual_Award_Wins i
+        JOIN Player_Plays_For p ON i.Player_ID = p.Player_ID
+        ORDER BY i.Year DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No awards found.")
+        return
+    print("\n{:<30} {:<6} {:<25} {:<10}".format("Award", "Year", "Player", "Player ID"))
+    print("-" * 75)
+    for row in rows:
+        print("{:<30} {:<6} {:<25} {:<10}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3])))
+
+
+
+# MANAGER OPTIONS
+
+
+
+def view_all_managers():
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Manager_ID, Name, Club_Name, Years_Managed
+        FROM Manager_Manages
+        ORDER BY Club_Name
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No managers found.")
+        return
+    print("\n{:<12} {:<25} {:<25} {:<12}".format("Manager ID", "Name", "Club", "Years Managed"))
+    print("-" * 75)
+    for row in rows:
+        print("{:<12} {:<25} {:<25} {:<12}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3])))
+
+def search_manager_by_name():
+    name = input("Enter manager name (or part of it): ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Manager_ID, Name, Club_Name, Years_Managed
+        FROM Manager_Manages
+        WHERE Name LIKE ?
+    """, ('%' + name + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No managers found.")
+        return
+    print("\n{:<12} {:<25} {:<25} {:<12}".format("Manager ID", "Name", "Club", "Years Managed"))
+    print("-" * 75)
+    for row in rows:
+        print("{:<12} {:<25} {:<25} {:<12}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3])))
+
+def view_manager_history():
+    manager_id = input("Enter Manager ID: ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT m.Name, m.Club_Name, y.Years
+        FROM Manager_Manages m
+        JOIN Manager_Years_Started y ON m.Manager_ID = y.Manager_ID AND m.Club_Name = y.Club_Name
+        WHERE m.Manager_ID = ?
+        ORDER BY y.Years
+    """, (manager_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No manager found with that ID.")
+        return
+    print("\n{:<25} {:<25} {:<10}".format("Manager Name", "Club", "Year Started"))
+    print("-" * 60)
+    for row in rows:
+        print("{:<25} {:<25} {:<10}".format(str(row[0]), str(row[1]), str(row[2])))
+
+def view_managers_by_club():
+    club = input("Enter club name (or part of it): ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT m.Manager_ID, m.Name, m.Club_Name, m.Years_Managed
+        FROM Manager_Manages m
+        WHERE m.Club_Name LIKE ?
+        ORDER BY m.Years_Managed DESC
+    """, ('%' + club + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No managers found for that club.")
+        return
+    print("\n{:<12} {:<25} {:<25} {:<12}".format("Manager ID", "Name", "Club", "Years Managed"))
+    print("-" * 75)
+    for row in rows:
+        print("{:<12} {:<25} {:<25} {:<12}".format(str(row[0]), str(row[1]), str(row[2]), str(row[3])))
+
+
+
+# GAME OPTIONS
+
+
+
+def view_all_games():
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Game_ID, Home_Team, Away_Team, Start_Time, Location, Score, Winning_Team
+        FROM Game
+        ORDER BY Start_Time DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No games found.")
+        return
+    print("\n{:<10} {:<20} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+        "Game ID", "Home Team", "Away Team", "Start Time", "Location", "Score", "Winner"))
+    print("-" * 122)
+    for row in rows:
+        print("{:<10} {:<20} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+            str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]), str(row[5]), str(row[6])))
+
+def search_games_by_club():
+    club = input("Enter club name: ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT g.Game_ID, g.Home_Team, g.Away_Team, g.Start_Time, g.Score, g.Winning_Team
+        FROM Game g
+        JOIN Plays p ON g.Game_ID = p.Game_ID
+        WHERE p.Club_Name LIKE ?
+        ORDER BY g.Start_Time DESC
+    """, ('%' + club + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No games found for that club.")
+        return
+    print("\n{:<10} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+        "Game ID", "Home Team", "Away Team", "Start Time", "Score", "Winner"))
+    print("-" * 102)
+    for row in rows:
+        print("{:<10} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+            str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]), str(row[5])))
+
+def view_games_by_winning_team():
+    team = input("Enter winning team name (or part of it): ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Game_ID, Home_Team, Away_Team, Start_Time, Score, Winning_Team
+        FROM Game
+        WHERE Winning_Team LIKE ?
+        ORDER BY Start_Time DESC
+    """, ('%' + team + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No games found for that winning team.")
+        return
+    print("\n{:<10} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+        "Game ID", "Home Team", "Away Team", "Start Time", "Score", "Winner"))
+    print("-" * 102)
+    for row in rows:
+        print("{:<10} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+            str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]), str(row[5])))
+
+def view_most_recent_games():
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Game_ID, Home_Team, Away_Team, Start_Time, Score, Winning_Team
+        FROM Game
+        ORDER BY Start_Time DESC
+        LIMIT 10
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No games found.")
+        return
+    print("\n{:<10} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+        "Game ID", "Home Team", "Away Team", "Start Time", "Score", "Winner"))
+    print("-" * 102)
+    for row in rows:
+        print("{:<10} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+            str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]), str(row[5])))
+
+def view_games_by_location():
+    location = input("Enter location (or part of it): ")
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Game_ID, Home_Team, Away_Team, Start_Time, Location, Score, Winning_Team
+        FROM Game
+        WHERE Location LIKE ?
+        ORDER BY Start_Time DESC
+    """, ('%' + location + '%',))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        print("No games found at that location.")
+        return
+    print("\n{:<10} {:<20} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+        "Game ID", "Home Team", "Away Team", "Start Time", "Location", "Score", "Winner"))
+    print("-" * 122)
+    for row in rows:
+        print("{:<10} {:<20} {:<20} {:<20} {:<20} {:<10} {:<20}".format(
+            str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]), str(row[5]), str(row[6])))
+
+
+
+# MENU OPTIONS
+
+
+
+def league_menu():
+    while True:
+        print("\n--- League Menu ---")
+        print("1. View all leagues")
+        print("2. View leagues by country")
+        print("3. View tournament winners by year")
+        print("0. Back")
+        choice = input("Enter choice: ")
+        if choice == "1":
+            view_all_leagues()
+        elif choice == "2":
+            view_leagues_by_country()
+        elif choice == "3":
+            view_tournament_winners_by_year()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice.")
+
+def club_menu():
+    while True:
+        print("\n--- Club Menu ---")
+        print("1. View all clubs")
+        print("2. Search club by name")
+        print("3. View clubs by league")
+        print("4. View clubs by location")
+        print("5. View top clubs by number of wins")
+        print("0. Back")
+        choice = input("Enter choice: ")
+        if choice == "1":
+            view_all_clubs()
+        elif choice == "2":
+            search_club_by_name()
+        elif choice == "3":
+            view_clubs_by_league()
+        elif choice == "4":
+            view_clubs_by_location()
+        elif choice == "5":
+            view_top_clubs_by_wins()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice.")
+
+def player_menu():
+    while True:
+        print("\n--- Player Menu ---")
+        print("1. View all players")
+        print("2. Search player by name")
+        print("3. View players by club")
+        print("4. View players by position")
+        print("5. View top scorers (goals > 100)")
+        print("6. View highest paid players")
+        print("7. View players by age")
+        print("8. View individual award winners")
+        print("0. Back")
+        choice = input("Enter choice: ")
+        if choice == "1":
+            view_all_players()
+        elif choice == "2":
+            search_player_by_name()
+        elif choice == "3":
+            view_players_by_club()
+        elif choice == "4":
+            view_players_by_position()
+        elif choice == "5":
+            view_top_scorers()
+        elif choice == "6":
+            view_highest_paid_players()
+        elif choice == "7":
+            view_players_by_age()
+        elif choice == "8":
+            view_player_awards()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice.")
+
+def manager_menu():
+    while True:
+        print("\n--- Manager Menu ---")
+        print("1. View all managers")
+        print("2. Search manager by name")
+        print("3. View manager history by ID")
+        print("4. View managers by club")
+        print("0. Back")
+        choice = input("Enter choice: ")
+        if choice == "1":
+            view_all_managers()
+        elif choice == "2":
+            search_manager_by_name()
+        elif choice == "3":
+            view_manager_history()
+        elif choice == "4":
+            view_managers_by_club()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice.")
+
+def game_menu():
+    while True:
+        print("\n--- Game Menu ---")
+        print("1. View all games")
+        print("2. Search games by club")
+        print("3. View games by winning team")
+        print("4. View most recent games")
+        print("5. View games by location")
+        print("0. Back")
+        choice = input("Enter choice: ")
+        if choice == "1":
+            view_all_games()
+        elif choice == "2":
+            search_games_by_club()
+        elif choice == "3":
+            view_games_by_winning_team()
+        elif choice == "4":
+            view_most_recent_games()
+        elif choice == "5":
+            view_games_by_location()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice.")
+
+
+
+# MAIN MENU
+
+
+
+def main():
+    print("Welcome to Pitch Perfect!")
+    while True:
+        print("\n=== Main Menu ===")
+        print("1. Leagues")
+        print("2. Clubs")
+        print("3. Players")
+        print("4. Managers")
+        print("5. Games")
+        print("0. Exit")
+        choice = input("\nEnter choice: ")
+        if choice == "1":
+            league_menu()
+        elif choice == "2":
+            club_menu()
+        elif choice == "3":
+            player_menu()
+        elif choice == "4":
+            manager_menu()
+        elif choice == "5":
+            game_menu()
+        elif choice == "0":
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice, please try again.")
+
+if __name__ == "__main__":
+    main()
