@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ club['Name'] }} — Pitch Perfect{% endblock %}
+{% block content %}
+
+<a href="/clubs" class="text-muted small"><i class="bi bi-arrow-left me-1"></i>Back to Clubs</a>
+
+<div class="row g-4 mt-1">
+
+  <!-- Club info -->
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-shield-fill me-2"></i>{{ club['Name'] }}</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><td class="text-muted">League</td><td>{{ club['League_Name'] }}</td></tr>
+          <tr><td class="text-muted">Stadium</td><td>{{ club['Location'] or '—' }}</td></tr>
+          <tr><td class="text-muted">Total Wins</td><td class="fw-bold">{{ club['Number_Of_Wins'] }}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    {% if managers %}
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-badge me-2"></i>Managers</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th class="ps-3">Name</th><th>Yrs</th></tr></thead>
+          <tbody>
+            {% for m in managers %}
+            <tr>
+              <td class="ps-3">{{ m[0] }}</td>
+              <td class="text-muted">{{ m[1] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Top players + recent games -->
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-bullseye me-2"></i>Top Scorers</div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th class="ps-3">#</th><th>Player</th><th class="text-center">Goals</th><th class="text-end pe-3">Market Value</th></tr></thead>
+          <tbody>
+            {% for p in top_players %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><a href="/players/{{ p[0] }}">{{ p[1] }}</a></td>
+              <td class="text-center fw-bold">{{ p[2] }}</td>
+              <td class="text-end pe-3 small text-muted">{% if p[3] %}€{{ '{:,.0f}'.format(p[3]) }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-calendar3 me-2"></i>Recent Results</div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:.88rem">
+          <thead><tr><th class="ps-3">Home</th><th class="text-center">Score</th><th>Away</th><th class="text-muted">Date</th></tr></thead>
+          <tbody>
+            {% for g in recent_games %}
+            <tr>
+              <td class="ps-3 {% if g[3]==g[0] %}fw-bold{% endif %}">{{ g[0] }}</td>
+              <td class="text-center">{{ g[2] }}</td>
+              <td class="{% if g[3]==g[1] %}fw-bold{% endif %}">{{ g[1] }}</td>
+              <td class="text-muted small">{{ g[4][:10] if g[4] else '' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

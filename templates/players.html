@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Players — Pitch Perfect{% endblock %}
+{% block content %}
+
+<h4 class="mb-3"><i class="bi bi-person-fill me-2"></i>Players</h4>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-6">
+    <input type="text" name="q" class="form-control" placeholder="Search player name..." value="{{ query }}">
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">Search</button>
+  </div>
+</form>
+
+<div class="mb-3">
+  <a href="/players?sort=goals" class="btn btn-sm {% if sort=='goals' and not query %}btn-primary{% else %}btn-outline-secondary{% endif %} me-1">
+    <i class="bi bi-bullseye me-1"></i>Top Scorers
+  </a>
+  <a href="/players?sort=market_value" class="btn btn-sm {% if sort=='market_value' and not query %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+    <i class="bi bi-currency-euro me-1"></i>Top Market Values
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover table-striped mb-0">
+      <thead>
+        <tr>
+          <th class="ps-3">Name</th>
+          <th>Club</th>
+          <th>Position</th>
+          <th class="text-center">Goals</th>
+          <th class="text-end pe-3">Market Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in players %}
+        <tr>
+          <td class="ps-3"><a href="/players/{{ row[0] }}">{{ row[1] }}</a></td>
+          <td class="text-muted small">{% if row[4] %}<a href="/clubs/{{ row[4] }}">{{ row[4] }}</a>{% else %}—{% endif %}</td>
+          <td class="text-muted small">{{ row[6] or '—' }}</td>
+          <td class="text-center">{{ row[3] if row[3] else '—' }}</td>
+          <td class="text-end pe-3 small">
+            {% if row[5] %}€{{ '{:,.0f}'.format(row[5]) }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

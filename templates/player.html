@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ player['Name'] }} — Pitch Perfect{% endblock %}
+{% block content %}
+
+<a href="/players" class="text-muted small"><i class="bi bi-arrow-left me-1"></i>Back to Players</a>
+
+<div class="row g-4 mt-1">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-circle me-2"></i>{{ player['Name'] }}</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><td class="text-muted">Club</td>
+              <td>{% if player['Club_Name'] %}<a href="/clubs/{{ player['Club_Name'] }}">{{ player['Club_Name'] }}</a>{% else %}—{% endif %}</td></tr>
+          <tr><td class="text-muted">Date of Birth</td><td>{{ player['DOB'] or '—' }}</td></tr>
+          <tr><td class="text-muted">Goals</td><td class="fw-bold">{{ player['Goals'] }}</td></tr>
+          <tr><td class="text-muted">Market Value</td>
+              <td>{% if player['Market_Value'] %}€{{ '{:,.0f}'.format(player['Market_Value']) }}{% else %}—{% endif %}</td></tr>
+          <tr><td class="text-muted">Position(s)</td>
+              <td>{{ positions | map(attribute=0) | join(', ') if positions else '—' }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-trophy me-2"></i>Awards</div>
+      {% if awards %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Year</th><th>Award</th><th>League</th></tr>
+          </thead>
+          <tbody>
+            {% for award in awards %}
+            <tr>
+              <td class="text-muted">{{ award[1] }}</td>
+              <td class="fw-semibold">{{ award[0] }}</td>
+              <td><a href="/awards?league={{ award[2] }}">{{ award[2] }}</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body text-muted">No individual awards recorded.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

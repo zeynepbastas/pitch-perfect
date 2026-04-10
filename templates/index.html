@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Pitch Perfect — Home{% endblock %}
+{% block content %}
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+  {% for label, val in [('Leagues', stats.leagues), ('Clubs', stats.clubs), ('Players', stats.players), ('Matches', stats.games)] %}
+  <div class="col-6 col-md-3">
+    <div class="card stat-card">
+      <div class="stat-number">{{ '{:,}'.format(val) }}</div>
+      <div class="stat-label">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-4">
+
+  <!-- 2024/25 Champions -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-trophy-fill text-warning me-2"></i>2024/25 Champions</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <tbody>
+            {% for row in champions %}
+            <tr>
+              <td class="ps-3">
+                <span class="badge-league badge-{{ row[0][:2]|lower }}">{{ row[0] }}</span>
+              </td>
+              <td class="fw-semibold">
+                <a href="/clubs/{{ row[1] }}">{{ row[1] }}</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Scorers -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-bullseye me-2"></i>All-Time Top Scorers</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <tbody>
+            {% for row in top_scorers %}
+            <tr>
+              <td class="ps-3 text-muted" style="width:30px">{{ loop.index }}</td>
+              <td>{{ row[0] }}</td>
+              <td class="text-muted small">{{ row[1] or '—' }}</td>
+              <td class="text-end pe-3 fw-bold">{{ row[2] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Games -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-calendar3 me-2"></i>Recent Results</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0" style="font-size:.85rem">
+          <tbody>
+            {% for row in recent_games %}
+            <tr>
+              <td class="ps-3 text-truncate" style="max-width:100px">{{ row[0] }}</td>
+              <td class="text-center fw-bold">{{ row[2] }}</td>
+              <td class="text-truncate" style="max-width:100px">{{ row[1] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Quick links -->
+<div class="row g-3 mt-2">
+  {% for label, icon, href in [
+      ('League Standings', 'bi-bar-chart-line', '/leagues'),
+      ('Player Search',    'bi-search',          '/players'),
+      ('Club Profiles',    'bi-shield-fill',      '/clubs'),
+      ('Award Winners',    'bi-award-fill',       '/awards')
+  ] %}
+  <div class="col-6 col-md-3">
+    <a href="{{ href }}" class="card text-decoration-none" style="color:inherit">
+      <div class="card-body text-center py-3">
+        <i class="bi {{ icon }} fs-3 text-primary mb-2 d-block"></i>
+        <div class="small">{{ label }}</div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

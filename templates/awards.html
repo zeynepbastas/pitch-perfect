@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Awards — Pitch Perfect{% endblock %}
+{% block content %}
+
+<h4 class="mb-3"><i class="bi bi-award-fill me-2"></i>Individual Awards</h4>
+
+<form method="get" class="row g-2 mb-4">
+  <div class="col-auto">
+    <select name="league" class="form-select">
+      <option value="">All Leagues</option>
+      {% for l in leagues %}
+      <option value="{{ l }}" {% if l == selected_league %}selected{% endif %}>{{ l }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <select name="year" class="form-select">
+      <option value="">All Years</option>
+      {% for y in years %}
+      <option value="{{ y }}" {% if y|string == selected_year %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+  {% if selected_league or selected_year %}
+  <div class="col-auto">
+    <a href="/awards" class="btn btn-outline-secondary">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover table-striped mb-0">
+      <thead>
+        <tr>
+          <th class="ps-3">Award</th>
+          <th class="text-center">Year</th>
+          <th>League</th>
+          <th>Winner</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in awards %}
+        <tr>
+          <td class="ps-3 fw-semibold"><i class="bi bi-trophy-fill text-warning me-2 small"></i>{{ row[0] }}</td>
+          <td class="text-center text-muted">{{ row[1] }}</td>
+          <td><a href="/awards?league={{ row[2] }}">{{ row[2] }}</a></td>
+          <td>{{ row[3] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

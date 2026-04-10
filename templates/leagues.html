@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Standings — Pitch Perfect{% endblock %}
+{% block content %}
+
+<h4 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>League Standings</h4>
+
+<form method="get" class="row g-2 mb-4">
+  <div class="col-auto">
+    <select name="league" class="form-select">
+      {% for l in leagues %}
+      <option value="{{ l }}" {% if l == selected_league %}selected{% endif %}>{{ l }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <select name="season" class="form-select">
+      {% for s in seasons %}
+      <option value="{{ s }}" {% if s == selected_season %}selected{% endif %}>{{ season_labels[s] }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">View Standings</button>
+  </div>
+</form>
+
+{% if standings %}
+<div class="card">
+  <div class="card-header">
+    {{ selected_league }} &mdash; {{ season_labels[selected_season] }}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-striped mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Club</th>
+          <th class="text-center">P</th>
+          <th class="text-center">W</th>
+          <th class="text-center">D</th>
+          <th class="text-center">L</th>
+          <th class="text-center">GF</th>
+          <th class="text-center">GA</th>
+          <th class="text-center">GD</th>
+          <th class="text-center">PTS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in standings %}
+        {% set i = loop.index %}
+        <tr {% if i == 1 %}style="border-left: 3px solid #ffd700"{% endif %}>
+          <td class="ps-3
+            {% if i == 1 %}rank-1{% elif i == 2 %}rank-2{% elif i == 3 %}rank-3{% else %}text-muted{% endif %}">
+            {{ i }}
+          </td>
+          <td><a href="/clubs/{{ row[0] }}">{{ row[0] }}</a></td>
+          <td class="text-center">{{ row[1] }}</td>
+          <td class="text-center fw-semibold">{{ row[2] }}</td>
+          <td class="text-center text-muted">{{ row[3] }}</td>
+          <td class="text-center text-muted">{{ row[4] }}</td>
+          <td class="text-center">{{ row[5] }}</td>
+          <td class="text-center">{{ row[6] }}</td>
+          <td class="text-center {% if row[7] > 0 %}gd-pos{% elif row[7] < 0 %}gd-neg{% endif %}">
+            {% if row[7] > 0 %}+{% endif %}{{ row[7] }}
+          </td>
+          <td class="text-center fw-bold">{{ row[8] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

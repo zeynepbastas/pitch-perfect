@@ -11,12 +11,15 @@ def connect():
 
 # ── shared helpers ────────────────────────────────────────────────────────────
 
-def pick(options, labels=None, prompt="  Select: "):
+def pick(options, labels=None, prompt="  Select (0 to cancel): "):
     labels = labels or [str(o) for o in options]
     for i, label in enumerate(labels, 1):
         print(f"    {i}. {label}")
+    print(f"    0. Back")
     while True:
         raw = input(prompt).strip()
+        if raw == "0":
+            return None
         if raw.isdigit() and 1 <= int(raw) <= len(options):
             return options[int(raw) - 1]
         print("  Invalid choice, try again.")
@@ -80,6 +83,7 @@ def view_tournament_winners():
 def season_summary():
     print("\n  Select season:")
     season = pick(SEASONS, SEASON_LABELS)
+    if season is None: return
     season_label = SEASON_LABELS[SEASONS.index(season)]
     conn = connect()
     champions = conn.execute(
@@ -104,8 +108,10 @@ def season_summary():
 def league_standings():
     print("\n  Select league:")
     league = pick(LEAGUES)
+    if league is None: return
     print("\n  Select season:")
     season = pick(SEASONS, SEASON_LABELS)
+    if season is None: return
     season_label = SEASON_LABELS[SEASONS.index(season)]
     conn = connect()
     rows = conn.execute(f"""
@@ -180,6 +186,7 @@ def search_club_by_name():
 def view_clubs_by_league():
     print("\n  Select league:")
     league = pick(LEAGUES)
+    if league is None: return
     conn = connect()
     rows = conn.execute(
         "SELECT Name, Location, Number_Of_Wins FROM Club_Teams_Belongs_To WHERE League_Name=? ORDER BY Number_Of_Wins DESC",
@@ -453,6 +460,7 @@ def view_player_awards():
 def awards_by_league():
     print("\n  Select league:")
     league = pick(LEAGUES)
+    if league is None: return
     conn   = connect()
     rows   = conn.execute("""
         SELECT Name, Year, Player
