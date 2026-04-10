@@ -27,7 +27,6 @@ def update_all_occurrences(old_name, new_name):
         ('Game', 'Home_Team'),
         ('Game', 'Away_Team'),
         ('Game', 'Winning_team'),
-        ('Individual_Award_Wins', 'Player'),
         ('Player_Plays_For', 'Club_Name'),
         ('Manager_Manages', 'Club_Name')
     ]

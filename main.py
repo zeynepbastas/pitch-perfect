@@ -91,7 +91,7 @@ def season_summary():
         (season,)
     ).fetchall()
     awards = conn.execute(
-        "SELECT League, Name, Player FROM Individual_Award_Wins WHERE Year=? ORDER BY League, Name",
+        "SELECT iaw.League, iaw.Name, p.Name FROM Individual_Award_Wins iaw JOIN Player_Plays_For p ON iaw.Player_ID = p.Player_ID WHERE iaw.Year=? ORDER BY iaw.League, iaw.Name",
         (season,)
     ).fetchall()
     conn.close()
@@ -463,10 +463,11 @@ def awards_by_league():
     if league is None: return
     conn   = connect()
     rows   = conn.execute("""
-        SELECT Name, Year, Player
-        FROM Individual_Award_Wins
-        WHERE League = ?
-        ORDER BY Name, Year
+        SELECT iaw.Name, iaw.Year, p.Name
+        FROM Individual_Award_Wins iaw
+        JOIN Player_Plays_For p ON iaw.Player_ID = p.Player_ID
+        WHERE iaw.League = ?
+        ORDER BY iaw.Name, iaw.Year
     """, (league,)).fetchall()
     conn.close()
     print(f"\n  {'─'*58}")

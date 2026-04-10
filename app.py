@@ -232,15 +232,15 @@ def awards():
     year   = request.args.get('year', '')
     conn   = db()
 
-    sql    = "SELECT Name, Year, League, Player FROM Individual_Award_Wins WHERE 1=1"
+    sql    = "SELECT iaw.Name, iaw.Year, iaw.League, p.Name FROM Individual_Award_Wins iaw JOIN Player_Plays_For p ON iaw.Player_ID = p.Player_ID WHERE 1=1"
     params = []
     if league:
-        sql += " AND League=?"
+        sql += " AND iaw.League=?"
         params.append(league)
     if year:
-        sql += " AND Year=?"
+        sql += " AND iaw.Year=?"
         params.append(year)
-    sql += " ORDER BY Year DESC, League, Name"
+    sql += " ORDER BY iaw.Year DESC, iaw.League, iaw.Name"
     rows  = conn.execute(sql, params).fetchall()
     years = [r[0] for r in conn.execute(
         "SELECT DISTINCT Year FROM Individual_Award_Wins ORDER BY Year DESC"
