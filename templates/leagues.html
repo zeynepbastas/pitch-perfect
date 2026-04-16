@@ -25,6 +25,11 @@
 </form>
 
 {% if standings %}
+<div class="d-flex gap-3 mb-2" style="font-size:.8rem">
+  <span><span style="display:inline-block;width:10px;height:10px;background:#58a6ff;border-radius:2px" class="me-1"></span>Champions League</span>
+  <span><span style="display:inline-block;width:10px;height:10px;background:#3fb950;border-radius:2px" class="me-1"></span>Europa League</span>
+  <span><span style="display:inline-block;width:10px;height:10px;background:#f85149;border-radius:2px" class="me-1"></span>Relegation</span>
+</div>
 <div class="card">
   <div class="card-header">
     {{ selected_league }} &mdash; {{ season_labels[selected_season] }}
@@ -48,7 +53,12 @@
       <tbody>
         {% for row in standings %}
         {% set i = loop.index %}
-        <tr {% if i == 1 %}style="border-left: 3px solid #ffd700"{% endif %}>
+        {% set total = standings|length %}
+        <tr class="
+          {% if i <= 4 %}zone-cl
+          {% elif i == 5 or i == 6 %}zone-el
+          {% elif i > total - 3 %}zone-rel
+          {% endif %}">
           <td class="ps-3
             {% if i == 1 %}rank-1{% elif i == 2 %}rank-2{% elif i == 3 %}rank-3{% else %}text-muted{% endif %}">
             {{ i }}

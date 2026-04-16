@@ -64,13 +64,22 @@
       <div class="card-header"><i class="bi bi-calendar3 me-2"></i>Recent Results</div>
       <div class="table-responsive">
         <table class="table table-hover mb-0" style="font-size:.88rem">
-          <thead><tr><th class="ps-3">Home</th><th class="text-center">Score</th><th>Away</th><th class="text-muted">Date</th></tr></thead>
+          <thead><tr><th class="ps-3">Home</th><th class="text-center">Score</th><th>Away</th><th class="text-center">Result</th><th class="text-muted">Date</th></tr></thead>
           <tbody>
             {% for g in recent_games %}
+            {% set club_name = club['Name'] %}
+            {% if g[3] == club_name %}
+              {% set result = 'W' %}
+            {% elif g[3] == 'Draw' %}
+              {% set result = 'D' %}
+            {% else %}
+              {% set result = 'L' %}
+            {% endif %}
             <tr>
               <td class="ps-3 {% if g[3]==g[0] %}fw-bold{% endif %}">{{ g[0] }}</td>
               <td class="text-center">{{ g[2] }}</td>
               <td class="{% if g[3]==g[1] %}fw-bold{% endif %}">{{ g[1] }}</td>
+              <td class="text-center"><span class="result-{{ result|lower }}">{{ result }}</span></td>
               <td class="text-muted small">{{ g[4][:10] if g[4] else '' }}</td>
             </tr>
             {% endfor %}

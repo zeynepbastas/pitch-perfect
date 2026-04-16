@@ -35,7 +35,7 @@ def index():
         WHERE Year = 2025 ORDER BY League_Name
     """).fetchall()
     top_scorers = conn.execute("""
-        SELECT Name, Club_Name, Goals FROM Player_Plays_For
+        SELECT Name, Club_Name, Goals, Player_ID FROM Player_Plays_For
         WHERE Goals IS NOT NULL ORDER BY Goals DESC LIMIT 5
     """).fetchall()
     recent_games = conn.execute("""
@@ -232,7 +232,7 @@ def awards():
     year   = request.args.get('year', '')
     conn   = db()
 
-    sql    = "SELECT iaw.Name, iaw.Year, iaw.League, p.Name FROM Individual_Award_Wins iaw JOIN Player_Plays_For p ON iaw.Player_ID = p.Player_ID WHERE 1=1"
+    sql    = "SELECT iaw.Name, iaw.Year, iaw.League, p.Name, p.Player_ID FROM Individual_Award_Wins iaw JOIN Player_Plays_For p ON iaw.Player_ID = p.Player_ID WHERE 1=1"
     params = []
     if league:
         sql += " AND iaw.League=?"
