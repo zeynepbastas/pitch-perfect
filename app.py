@@ -33,7 +33,7 @@ def index():
         'games':    conn.execute("SELECT COUNT(*) FROM Game").fetchone()[0],
     }
     champions = conn.execute("""
-        SELECT League_Name, Winner FROM League_Tournament_Has
+        SELECT League_Name, Winner, Country FROM vw_season_champions
         WHERE Year = 2025 ORDER BY League_Name
     """).fetchall()
     top_scorers = conn.execute("""
@@ -248,15 +248,15 @@ def awards():
     year   = request.args.get('year', '')
     conn   = db()
 
-    sql    = "SELECT iaw.Name, iaw.Year, iaw.League, p.Name, p.Player_ID FROM Individual_Award_Wins iaw JOIN Player_Plays_For p ON iaw.Player_ID = p.Player_ID WHERE 1=1"
+    sql    = "SELECT Award_Name, Year, League, Player_Name, Player_ID FROM vw_player_awards WHERE 1=1"
     params = []
     if league:
-        sql += " AND iaw.League=?"
+        sql += " AND League=?"
         params.append(league)
     if year:
-        sql += " AND iaw.Year=?"
+        sql += " AND Year=?"
         params.append(year)
-    sql += " ORDER BY iaw.Year DESC, iaw.League, iaw.Name"
+    sql += " ORDER BY Year DESC, League, Award_Name"
     rows  = conn.execute(sql, params).fetchall()
     years = [r[0] for r in conn.execute(
         "SELECT DISTINCT Year FROM Individual_Award_Wins ORDER BY Year DESC"
