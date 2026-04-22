@@ -66,6 +66,13 @@
         <li class="nav-item"><a class="nav-link {% if '/players' in request.path %}active{% endif %}" href="/players">Players</a></li>
         <li class="nav-item"><a class="nav-link {% if '/managers' in request.path %}active{% endif %}" href="/managers">Managers</a></li>
         <li class="nav-item"><a class="nav-link {% if '/awards' in request.path %}active{% endif %}" href="/awards">Awards</a></li>
+        {% if session.user_id %}
+        <li class="nav-item"><a class="nav-link {% if '/favorites' in request.path %}active{% endif %}" href="/favorites"><i class="bi bi-heart-fill text-danger me-1"></i>Favorites</a></li>
+        <li class="nav-item"><a class="nav-link text-muted small" href="/logout">{{ session.username }} · Logout</a></li>
+        {% else %}
+        <li class="nav-item"><a class="nav-link {% if '/login' in request.path %}active{% endif %}" href="/login">Login</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/register' in request.path %}active{% endif %}" href="/register">Register</a></li>
+        {% endif %}
       </ul>
     </div>
   </div>

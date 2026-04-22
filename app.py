@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, redirect, url_for, flash
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 
 app = Flask(__name__)
+app.secret_key = 'pitchperfect341'
 DB = 'pitch_perfect.db'
 
 LEAGUES       = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1']
@@ -144,8 +146,15 @@ def player_profile(pid):
         "SELECT Name, Year, League FROM Individual_Award_Wins WHERE Player_ID=? ORDER BY Year",
         (pid,)
     ).fetchall()
+    is_saved = False
+    if session.get('user_id'):
+        is_saved = conn.execute(
+            "SELECT 1 FROM Favorite WHERE User_ID=? AND Type='player' AND Reference=?",
+            (session['user_id'], str(pid))
+        ).fetchone() is not None
     conn.close()
-    return render_template('player.html', player=player, positions=positions, awards=awards)
+    return render_template('player.html', player=player, positions=positions,
+                           awards=awards, is_saved=is_saved)
 
 # ── Clubs ─────────────────────────────────────────────────────────────────────
 
@@ -194,9 +203,16 @@ def club_profile(name):
         FROM Game WHERE Home_Team=? OR Away_Team=?
         ORDER BY Start_Time DESC LIMIT 10
     """, (name, name)).fetchall()
+    is_saved = False
+    if session.get('user_id'):
+        is_saved = conn.execute(
+            "SELECT 1 FROM Favorite WHERE User_ID=? AND Type='club' AND Reference=?",
+            (session['user_id'], name)
+        ).fetchone() is not None
     conn.close()
     return render_template('club.html', club=club, managers=managers,
-                           top_players=top_players, recent_games=recent_games)
+                           top_players=top_players, recent_games=recent_games,
+                           is_saved=is_saved)
 
 # ── Managers ──────────────────────────────────────────────────────────────────
 
@@ -248,6 +264,105 @@ def awards():
     conn.close()
     return render_template('awards.html', awards=rows, leagues=LEAGUES,
                            years=years, selected_league=league, selected_year=year)
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        if not username or not password:
+            flash('Username and password required.')
+            return render_template('register.html')
+        conn = db()
+        existing = conn.execute("SELECT 1 FROM User WHERE Username=?", (username,)).fetchone()
+        if existing:
+            flash('Username already taken.')
+            conn.close()
+            return render_template('register.html')
+        conn.execute("INSERT INTO User (Username, Password_Hash) VALUES (?, ?)",
+                     (username, generate_password_hash(password)))
+        conn.commit()
+        user = conn.execute("SELECT User_ID FROM User WHERE Username=?", (username,)).fetchone()
+        conn.close()
+        session['user_id'] = user['User_ID']
+        session['username'] = username
+        return redirect(url_for('index'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        conn = db()
+        user = conn.execute("SELECT * FROM User WHERE Username=?", (username,)).fetchone()
+        conn.close()
+        if not user or not check_password_hash(user['Password_Hash'], password):
+            flash('Invalid username or password.')
+            return render_template('login.html')
+        session['user_id'] = user['User_ID']
+        session['username'] = user['Username']
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
+# ── Favorites ─────────────────────────────────────────────────────────────────
+
+@app.route('/favorite/add', methods=['POST'])
+def favorite_add():
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    ftype = request.form['type']
+    ref   = request.form['reference']
+    back  = request.form.get('back', '/')
+    conn  = db()
+    conn.execute("INSERT OR IGNORE INTO Favorite (User_ID, Type, Reference) VALUES (?,?,?)",
+                 (session['user_id'], ftype, ref))
+    conn.commit()
+    conn.close()
+    return redirect(back)
+
+@app.route('/favorite/remove', methods=['POST'])
+def favorite_remove():
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    ftype = request.form['type']
+    ref   = request.form['reference']
+    back  = request.form.get('back', '/')
+    conn  = db()
+    conn.execute("DELETE FROM Favorite WHERE User_ID=? AND Type=? AND Reference=?",
+                 (session['user_id'], ftype, ref))
+    conn.commit()
+    conn.close()
+    return redirect(back)
+
+@app.route('/favorites')
+def favorites():
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    conn = db()
+    players = conn.execute("""
+        SELECT p.Player_ID, p.Name, p.Club_Name, p.Goals
+        FROM Favorite f
+        JOIN Player_Plays_For p ON f.Reference = CAST(p.Player_ID AS TEXT)
+        WHERE f.User_ID=? AND f.Type='player'
+        ORDER BY p.Name
+    """, (session['user_id'],)).fetchall()
+    clubs = conn.execute("""
+        SELECT c.Name, c.League_Name, c.Location, c.Number_Of_Wins
+        FROM Favorite f
+        JOIN Club_Teams_Belongs_To c ON f.Reference = c.Name
+        WHERE f.User_ID=? AND f.Type='club'
+        ORDER BY c.Name
+    """, (session['user_id'],)).fetchall()
+    conn.close()
+    return render_template('favorites.html', players=players, clubs=clubs)
 
 if __name__ == '__main__':
     app.run(debug=True)

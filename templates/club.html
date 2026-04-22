@@ -2,7 +2,28 @@
 {% block title %}{{ club['Name'] }} — Pitch Perfect{% endblock %}
 {% block content %}
 
-<a href="/clubs" class="text-muted small"><i class="bi bi-arrow-left me-1"></i>Back to Clubs</a>
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <a href="/clubs" class="text-muted small"><i class="bi bi-arrow-left me-1"></i>Back to Clubs</a>
+  {% if session.user_id %}
+    {% if is_saved %}
+    <form method="post" action="/favorite/remove">
+      <input type="hidden" name="type" value="club">
+      <input type="hidden" name="reference" value="{{ club['Name'] }}">
+      <input type="hidden" name="back" value="/clubs/{{ club['Name'] }}">
+      <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-heart-fill me-1"></i>Saved</button>
+    </form>
+    {% else %}
+    <form method="post" action="/favorite/add">
+      <input type="hidden" name="type" value="club">
+      <input type="hidden" name="reference" value="{{ club['Name'] }}">
+      <input type="hidden" name="back" value="/clubs/{{ club['Name'] }}">
+      <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-heart me-1"></i>Save Club</button>
+    </form>
+    {% endif %}
+  {% else %}
+  <a href="/login" class="btn btn-sm btn-outline-secondary"><i class="bi bi-heart me-1"></i>Save Club</a>
+  {% endif %}
+</div>
 
 <div class="row g-4 mt-1">
 
