@@ -24,7 +24,7 @@ about players, clubs, leagues, and season performance.
 - 5 leagues: Premier League, La Liga, Serie A, Bundesliga, Ligue 1
 - 5 seasons: 2020/21 through 2024/25
 
-| 132 | Clubs | 7,130 | Players |
+| 132 | Clubs | 7,125 | Players |
 |---|---|---|---|
 | 8,982 | Matches | 48 | Managers |
 
@@ -45,12 +45,13 @@ games have two clubs, players win awards. Perfect for a relational schema.
 |---|---|
 | Database | SQLite 3.43 |
 | Schema & loading | Python, pandas, sqlite3 |
-| Data cleaning | rapidfuzz (fuzzy club name matching) |
+| Data sources | football-data.co.uk (matches), transfermarkt-datasets (players), manual research (managers, awards) |
+| Data cleaning | Manual mapping dict (club name standardization), rapidfuzz (stadium + award name fuzzy matching) |
 | CLI | Python (argparse-style menus, 25+ queries) |
 | Web UI | Flask 3.1, Jinja2, Bootstrap 5 (dark theme) |
 | Version control | Git / GitHub |
 
-**Schema:** 10 tables, foreign key constraints enforced, BCNF analysis performed
+**Schema:** 10 tables + 3 SQL views, foreign key constraints enforced, BCNF analysis performed
 
 ---
 
@@ -66,11 +67,12 @@ games have two clubs, players win awards. Perfect for a relational schema.
 - Home dashboard — stats, 2024/25 champions, top scorers, recent results
 - League standings — with Champions League / Europa / Relegation zone coloring
 - Player profiles — goals, market value, positions, awards
-- Club profiles — managers, top scorers, W/D/L recent results
+- Club profiles — all-time record (W/D/L), managers, top scorers, recent results
 - Awards — filterable by league and year, links to player profiles
 
 **Database features**
-- Correlated subqueries, CTEs, aggregations across 5 leagues
+- CTEs, correlated subqueries, aggregations across 5 leagues
+- 3 SQL views: `vw_player_awards`, `vw_club_record`, `vw_season_champions`
 - BCNF violation in `Individual_Award_Wins` identified and fixed
   (dropped redundant `Player` name column — now derived via JOIN)
 
@@ -80,8 +82,8 @@ games have two clubs, players win awards. Perfect for a relational schema.
 
 | Team Member | Contributions |
 |---|---|
-| **Zeynep Baştaş** | Database schema design, data loading scripts, league standings query, season summary, head-to-head, BCNF analysis, web UI |
-| **Maggie Farra** | CLI architecture, player/club/manager query functions, data cleaning |
+| **Zeynep Baştaş** | Database schema design, data loading scripts, league standings CTE query, season summary, head-to-head, BCNF analysis, SQL views, web UI (Flask/Jinja2) |
+| **Maggie Farra** | CLI architecture, player/club/manager query functions, data cleaning (club name standardization, rapidfuzz matching) |
 | **Baxter King** | [fill in Baxter's contributions] |
 
 **Shared:**
@@ -96,14 +98,15 @@ games have two clubs, players win awards. Perfect for a relational schema.
 
 1. Home page → stats dashboard
 2. Leagues → Premier League 2024/25 standings (zone colors)
-3. Click a club → club profile (managers, top scorers, W/D/L results)
+3. Click a club → club profile (all-time record, managers, top scorers, W/D/L results)
 4. Click a player → player profile (awards)
 5. Awards page → filter by league/year → click player link
 6. Players → search a name
 7. CLI → season summary or head-to-head demo
 
 **Likely TA questions:**
-- How does the standings query work? *(CTE aggregating home + away separately)*
-- Why does Game have League_Name if clubs already know their league? *(intentional denormalization for query performance — BCNF violation, documented)*
-- What BCNF violations did you find? *(3 found, 1 fixed — Individual_Award_Wins)*
-- How did you handle club name inconsistencies? *(standardize_clubs.py with fuzzy matching)*
+- How does the standings query work? *(CTE aggregating home + away separately, then JOINed)*
+- Why use SQL views? *(Encapsulate complex aggregations — vw_club_record, vw_season_champions, vw_player_awards)*
+- What BCNF violations did you find? *(3 found, 1 fixed — Individual_Award_Wins dropped redundant Player column)*
+- How did you handle club name inconsistencies? *(Manual mapping dict in standardize_clubs.py; rapidfuzz for stadium/award fuzzy matching)*
+- Where does your data come from? *(football-data.co.uk for matches, transfermarkt-datasets for player market values, manual research for managers and awards)*
