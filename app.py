@@ -372,10 +372,11 @@ def quiz():
 
 @app.route('/quiz/result', methods=['POST'])
 def quiz_result():
-    style     = request.form.get('style', 'balanced')
-    size      = request.form.get('size', 'giant')
-    league    = request.form.get('league', 'any')
-    home_pref = request.form.get('home_pref', 'any')
+    style      = request.form.get('style', 'balanced')
+    size       = request.form.get('size', 'giant')
+    league     = request.form.get('league', 'any')
+    home_pref  = request.form.get('home_pref', 'any')
+    efficiency = request.form.get('efficiency', 'any')
 
     conn = db()
     clubs = conn.execute("""
@@ -414,17 +415,18 @@ def quiz_result():
     # Compute per-club stats
     def stats(c):
         tg = c['total_games'] or 1
+        gf = c['total_gf'] or 0
         return {
-            'gf_pg': c['total_gf'] / tg,
-            'ga_pg': c['total_ga'] / tg,
-            'wr':    c['total_wins'] / tg,
-            'hwr':   c['home_wins'] / (c['home_games'] or 1),
-            'awr':   c['away_wins'] / (c['away_games'] or 1),
+            'gf_pg':  gf / tg,
+            'ga_pg':  c['total_ga'] / tg,
+            'wr':     c['total_wins'] / tg,
+            'hwr':    c['home_wins'] / (c['home_games'] or 1),
+            'awr':    c['away_wins'] / (c['away_games'] or 1),
+            'wpg':    c['total_wins'] / (gf + 0.1),  # wins per goal = clinical
         }
 
     all_stats = [stats(c) for c in clubs]
 
-    # Normalize each metric to [0,1] across all clubs in the filtered set
     def norm(vals):
         lo, hi = min(vals), max(vals)
         return [(v - lo) / (hi - lo + 1e-9) for v in vals]
@@ -434,19 +436,23 @@ def quiz_result():
     hwr_n  = norm([s['hwr']   for s in all_stats])
     awr_n  = norm([s['awr']   for s in all_stats])
     wins_n = norm([c['Number_Of_Wins'] or 0 for c in clubs])
+    wpg_n  = norm([s['wpg']   for s in all_stats])
 
     scored = []
     for i, c in enumerate(clubs):
         score = 0
-        if style == 'attack':    score += gf_n[i]                      * 30
-        elif style == 'defense': score += (1 - ga_n[i])                * 30
-        else:                    score += (gf_n[i] + (1 - ga_n[i]))    * 15
+        if style == 'attack':       score += gf_n[i]                           * 25
+        elif style == 'defense':    score += (1-ga_n[i])*12 + (1-gf_n[i])*13
+        else:                       score += (gf_n[i]+(1-ga_n[i]))            * 12
 
-        if size == 'giant':      score += wins_n[i]                    * 50
-        elif size == 'underdog': score += (1 - wins_n[i])              * 50
+        if size == 'giant':         score += wins_n[i]                 * 38
+        elif size == 'underdog':    score += (1 - wins_n[i])           * 38
 
-        if home_pref == 'home':  score += hwr_n[i]                     * 20
-        elif home_pref == 'away':score += awr_n[i]                     * 20
+        if home_pref == 'home':     score += hwr_n[i]                  * 10
+        elif home_pref == 'away':   score += awr_n[i]                  * 10
+
+        if efficiency == 'clinical':score += (1 - gf_n[i])             * 27
+        elif efficiency == 'flair': score += gf_n[i]                   * 27
 
         scored.append((score, dict(c)))
 
