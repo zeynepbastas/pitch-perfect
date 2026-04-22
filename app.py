@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, redirect, url_for, flash
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 
 app = Flask(__name__)
+app.secret_key = 'pitchperfect341'
 DB = 'pitch_perfect.db'
 
 LEAGUES       = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1']
@@ -144,8 +146,15 @@ def player_profile(pid):
         "SELECT Name, Year, League FROM Individual_Award_Wins WHERE Player_ID=? ORDER BY Year",
         (pid,)
     ).fetchall()
+    is_saved = False
+    if session.get('user_id'):
+        is_saved = conn.execute(
+            "SELECT 1 FROM Favorite WHERE User_ID=? AND Type='player' AND Reference=?",
+            (session['user_id'], str(pid))
+        ).fetchone() is not None
     conn.close()
-    return render_template('player.html', player=player, positions=positions, awards=awards)
+    return render_template('player.html', player=player, positions=positions,
+                           awards=awards, is_saved=is_saved)
 
 # ── Clubs ─────────────────────────────────────────────────────────────────────
 
@@ -194,9 +203,16 @@ def club_profile(name):
         FROM Game WHERE Home_Team=? OR Away_Team=?
         ORDER BY Start_Time DESC LIMIT 10
     """, (name, name)).fetchall()
+    is_saved = False
+    if session.get('user_id'):
+        is_saved = conn.execute(
+            "SELECT 1 FROM Favorite WHERE User_ID=? AND Type='club' AND Reference=?",
+            (session['user_id'], name)
+        ).fetchone() is not None
     conn.close()
     return render_template('club.html', club=club, managers=managers,
-                           top_players=top_players, recent_games=recent_games)
+                           top_players=top_players, recent_games=recent_games,
+                           is_saved=is_saved)
 
 # ── Managers ──────────────────────────────────────────────────────────────────
 
@@ -248,6 +264,220 @@ def awards():
     conn.close()
     return render_template('awards.html', awards=rows, leagues=LEAGUES,
                            years=years, selected_league=league, selected_year=year)
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        if not username or not password:
+            flash('Username and password required.')
+            return render_template('register.html')
+        conn = db()
+        existing = conn.execute("SELECT 1 FROM User WHERE Username=?", (username,)).fetchone()
+        if existing:
+            flash('Username already taken.')
+            conn.close()
+            return render_template('register.html')
+        conn.execute("INSERT INTO User (Username, Password_Hash) VALUES (?, ?)",
+                     (username, generate_password_hash(password)))
+        conn.commit()
+        user = conn.execute("SELECT User_ID FROM User WHERE Username=?", (username,)).fetchone()
+        conn.close()
+        session['user_id'] = user['User_ID']
+        session['username'] = username
+        return redirect(url_for('index'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        conn = db()
+        user = conn.execute("SELECT * FROM User WHERE Username=?", (username,)).fetchone()
+        conn.close()
+        if not user or not check_password_hash(user['Password_Hash'], password):
+            flash('Invalid username or password.')
+            return render_template('login.html')
+        session['user_id'] = user['User_ID']
+        session['username'] = user['Username']
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
+# ── Favorites ─────────────────────────────────────────────────────────────────
+
+@app.route('/favorite/add', methods=['POST'])
+def favorite_add():
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    ftype = request.form['type']
+    ref   = request.form['reference']
+    back  = request.form.get('back', '/')
+    conn  = db()
+    conn.execute("INSERT OR IGNORE INTO Favorite (User_ID, Type, Reference) VALUES (?,?,?)",
+                 (session['user_id'], ftype, ref))
+    conn.commit()
+    conn.close()
+    return redirect(back)
+
+@app.route('/favorite/remove', methods=['POST'])
+def favorite_remove():
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    ftype = request.form['type']
+    ref   = request.form['reference']
+    back  = request.form.get('back', '/')
+    conn  = db()
+    conn.execute("DELETE FROM Favorite WHERE User_ID=? AND Type=? AND Reference=?",
+                 (session['user_id'], ftype, ref))
+    conn.commit()
+    conn.close()
+    return redirect(back)
+
+@app.route('/favorites')
+def favorites():
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    conn = db()
+    players = conn.execute("""
+        SELECT p.Player_ID, p.Name, p.Club_Name, p.Goals
+        FROM Favorite f
+        JOIN Player_Plays_For p ON f.Reference = CAST(p.Player_ID AS TEXT)
+        WHERE f.User_ID=? AND f.Type='player'
+        ORDER BY p.Name
+    """, (session['user_id'],)).fetchall()
+    clubs = conn.execute("""
+        SELECT c.Name, c.League_Name, c.Location, c.Number_Of_Wins
+        FROM Favorite f
+        JOIN Club_Teams_Belongs_To c ON f.Reference = c.Name
+        WHERE f.User_ID=? AND f.Type='club'
+        ORDER BY c.Name
+    """, (session['user_id'],)).fetchall()
+    conn.close()
+    return render_template('favorites.html', players=players, clubs=clubs)
+
+# ── Quiz ──────────────────────────────────────────────────────────────────────
+
+@app.route('/quiz')
+def quiz():
+    return render_template('quiz.html', leagues=LEAGUES)
+
+@app.route('/quiz/result', methods=['POST'])
+def quiz_result():
+    style     = request.form.get('style', 'balanced')
+    size      = request.form.get('size', 'giant')
+    league    = request.form.get('league', 'any')
+    home_pref = request.form.get('home_pref', 'any')
+
+    conn = db()
+    clubs = conn.execute("""
+        WITH home_stats AS (
+            SELECT Home_Team AS Club,
+                   COUNT(*) AS hg,
+                   SUM(Home_Score) AS hgf,
+                   SUM(Away_Score) AS hga,
+                   SUM(CASE WHEN Winning_team=Home_Team THEN 1 ELSE 0 END) AS hw
+            FROM Game GROUP BY Home_Team
+        ),
+        away_stats AS (
+            SELECT Away_Team AS Club,
+                   COUNT(*) AS ag,
+                   SUM(Away_Score) AS agf,
+                   SUM(Home_Score) AS aga,
+                   SUM(CASE WHEN Winning_team=Away_Team THEN 1 ELSE 0 END) AS aw
+            FROM Game GROUP BY Away_Team
+        )
+        SELECT c.Name, c.League_Name, c.Location, c.Number_Of_Wins,
+               h.hg + a.ag  AS total_games,
+               h.hgf + a.agf AS total_gf,
+               h.hga + a.aga AS total_ga,
+               h.hw + a.aw   AS total_wins,
+               h.hw AS home_wins, h.hg AS home_games,
+               a.aw AS away_wins, a.ag AS away_games
+        FROM Club_Teams_Belongs_To c
+        JOIN home_stats h ON c.Name = h.Club
+        JOIN away_stats a ON c.Name = a.Club
+    """).fetchall()
+    conn.close()
+
+    if league != 'any':
+        clubs = [c for c in clubs if c['League_Name'] == league]
+
+    # Compute per-club stats
+    def stats(c):
+        tg = c['total_games'] or 1
+        return {
+            'gf_pg': c['total_gf'] / tg,
+            'ga_pg': c['total_ga'] / tg,
+            'wr':    c['total_wins'] / tg,
+            'hwr':   c['home_wins'] / (c['home_games'] or 1),
+            'awr':   c['away_wins'] / (c['away_games'] or 1),
+        }
+
+    all_stats = [stats(c) for c in clubs]
+
+    # Normalize each metric to [0,1] across all clubs in the filtered set
+    def norm(vals):
+        lo, hi = min(vals), max(vals)
+        return [(v - lo) / (hi - lo + 1e-9) for v in vals]
+
+    gf_n   = norm([s['gf_pg'] for s in all_stats])
+    ga_n   = norm([s['ga_pg'] for s in all_stats])
+    hwr_n  = norm([s['hwr']   for s in all_stats])
+    awr_n  = norm([s['awr']   for s in all_stats])
+    wins_n = norm([c['Number_Of_Wins'] or 0 for c in clubs])
+
+    scored = []
+    for i, c in enumerate(clubs):
+        score = 0
+        if style == 'attack':    score += gf_n[i]                      * 30
+        elif style == 'defense': score += (1 - ga_n[i])                * 30
+        else:                    score += (gf_n[i] + (1 - ga_n[i]))    * 15
+
+        if size == 'giant':      score += wins_n[i]                    * 50
+        elif size == 'underdog': score += (1 - wins_n[i])              * 50
+
+        if home_pref == 'home':  score += hwr_n[i]                     * 20
+        elif home_pref == 'away':score += awr_n[i]                     * 20
+
+        scored.append((score, dict(c)))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    best = scored[0][1] if scored else None
+
+    # Build a personalised reason string
+    reasons = []
+    if style == 'attack':
+        reasons.append(f"they score {best['total_gf']//(best['total_games'] or 1)} goals per game on average")
+    elif style == 'defense':
+        reasons.append(f"they concede only {best['total_ga']//(best['total_games'] or 1)} goals per game")
+    else:
+        gd = best['total_gf'] - best['total_ga']
+        reasons.append(f"they have a goal difference of +{gd}" if gd >= 0 else f"they play a balanced game")
+
+    if size == 'giant':
+        reasons.append(f"with {best['Number_Of_Wins']} all-time wins they're a true powerhouse")
+    elif size == 'underdog':
+        reasons.append("they're a scrappy club that punches above their weight")
+
+    if home_pref == 'home':
+        pct = round(best['home_wins'] / (best['home_games'] or 1) * 100)
+        reasons.append(f"their home record is fierce — {pct}% win rate at {best['Location'] or 'home'}")
+    elif home_pref == 'away':
+        pct = round(best['away_wins'] / (best['away_games'] or 1) * 100)
+        reasons.append(f"they thrive on the road with a {pct}% away win rate")
+
+    reason = ", and ".join(reasons) + "."
+    return render_template('quiz_result.html', club=best, reason=reason,
+                           style=style, size=size, league=league, home_pref=home_pref)
 
 if __name__ == '__main__':
     app.run(debug=True)
