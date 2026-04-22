@@ -411,27 +411,42 @@ def quiz_result():
     if league != 'any':
         clubs = [c for c in clubs if c['League_Name'] == league]
 
-    scored = []
-    for c in clubs:
+    # Compute per-club stats
+    def stats(c):
         tg = c['total_games'] or 1
-        hg = c['home_games'] or 1
-        ag = c['away_games'] or 1
-        gf_pg  = c['total_gf'] / tg
-        ga_pg  = c['total_ga'] / tg
-        wr     = c['total_wins'] / tg
-        hwr    = c['home_wins'] / hg
-        awr    = c['away_wins'] / ag
+        return {
+            'gf_pg': c['total_gf'] / tg,
+            'ga_pg': c['total_ga'] / tg,
+            'wr':    c['total_wins'] / tg,
+            'hwr':   c['home_wins'] / (c['home_games'] or 1),
+            'awr':   c['away_wins'] / (c['away_games'] or 1),
+        }
 
+    all_stats = [stats(c) for c in clubs]
+
+    # Normalize each metric to [0,1] across all clubs in the filtered set
+    def norm(vals):
+        lo, hi = min(vals), max(vals)
+        return [(v - lo) / (hi - lo + 1e-9) for v in vals]
+
+    gf_n   = norm([s['gf_pg'] for s in all_stats])
+    ga_n   = norm([s['ga_pg'] for s in all_stats])
+    hwr_n  = norm([s['hwr']   for s in all_stats])
+    awr_n  = norm([s['awr']   for s in all_stats])
+    wins_n = norm([c['Number_Of_Wins'] or 0 for c in clubs])
+
+    scored = []
+    for i, c in enumerate(clubs):
         score = 0
-        if style == 'attack':   score += gf_pg * 4
-        elif style == 'defense':score += (1 / (ga_pg + 0.1)) * 4
-        else:                   score += (gf_pg - ga_pg) * 3
+        if style == 'attack':    score += gf_n[i]                      * 30
+        elif style == 'defense': score += (1 - ga_n[i])                * 30
+        else:                    score += (gf_n[i] + (1 - ga_n[i]))    * 15
 
-        if size == 'giant':     score += wr * 3
-        elif size == 'underdog':score += (1 - wr) * 3
+        if size == 'giant':      score += wins_n[i]                    * 50
+        elif size == 'underdog': score += (1 - wins_n[i])              * 50
 
-        if home_pref == 'home': score += hwr * 2
-        elif home_pref == 'away':score += awr * 2
+        if home_pref == 'home':  score += hwr_n[i]                     * 20
+        elif home_pref == 'away':score += awr_n[i]                     * 20
 
         scored.append((score, dict(c)))
 
