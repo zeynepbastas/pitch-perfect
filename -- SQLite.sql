@@ -1,85 +1,44 @@
--- ============================================================
--- Pitch Perfect — SQL Query Examples
--- CSDS 341 Spring 2026 | Baştaş, Farra, King
--- ============================================================
-
-
--- ============================================================
--- EASY QUERIES
--- ============================================================
-
--- Easy 1: All clubs in a given league (Germany = Bundesliga)
-SELECT Club_Teams_Belongs_To.Name, League_Name
-FROM Club_Teams_Belongs_To
-JOIN League ON League.Name = Club_Teams_Belongs_To.League_Name
+-- SQLite
+-- Easy Query 1: Find Club team names that play in Germany
+SELECT Club_Teams_Belongs_To.Name, League_Name 
+FROM 'Club_Teams_Belongs_To' 
+JOIN League ON League.Name = Club_Teams_Belongs_To.League_Name 
 WHERE League.Country = 'Germany';
 
--- Easy 2: Players with significant goals and high market value
-SELECT Name, Club_Name, Goals, Market_Value
-FROM Player_Plays_For
-WHERE Goals > 14 AND Market_Value > 10000000
+--Easy Query 2: Find name, club name, goals, and market value of players with more than 14 goasl and making over 10000000
+SELECT Name, Club_Name, Goals, Market_Value 
+FROM Player_Plays_For 
+WHERE Goals > 14 AND Market_Value > 10000000 
 ORDER BY Goals DESC;
 
+--Medium Query 1: Find club name and ratio of number of goals to money spent on players
+SELECT Club_Name, 
+SUM(Market_Value) AS Total_Wages, 
+SUM(Goals) AS Total_Goals,
+ (SUM(Market_Value) / NULLIF(SUM(Goals), 0)) AS Cost_Per_Goal 
+FROM Player_Plays_For 
+GROUP BY Club_Name 
+HAVING Cost_Per_Goal IS NOT NULL 
+ORDER BY Cost_Per_Goal ASC;
 
--- ============================================================
--- MEDIUM QUERIES
--- ============================================================
 
--- Medium 1: Total goals and matches played per league
-SELECT League_Name,
-       SUM(Home_Score + Away_Score) AS Total_Goals,
-       COUNT(*)                     AS Games_Played
-FROM Game
-GROUP BY League_Name
-ORDER BY Total_Goals DESC;
-
--- Medium 2: Most cost-efficient clubs (market value per goal scored)
-SELECT Club_Name,
-       SUM(Market_Value)                            AS Total_Market_Value,
-       SUM(Goals)                                   AS Total_Goals,
-       (SUM(Market_Value) / NULLIF(SUM(Goals), 0)) AS Cost_Per_Goal
-FROM Player_Plays_For
-GROUP BY Club_Name
-HAVING Cost_Per_Goal IS NOT NULL
-ORDER BY Cost_Per_Goal ASC
-LIMIT 15;
-
--- Medium 3: Which positions win the most awards?
-SELECT Player_Position.position,
-       COUNT(*) AS Award_Count
-FROM Individual_Award_Wins
-JOIN Player_Position ON Individual_Award_Wins.Player_ID = Player_Position.Player_ID
-GROUP BY Player_Position.position
+--Medium Query 2: Count number of positions who have won individual awards
+SELECT Player_Position.position, 
+COUNT(Individual_Award_Wins.Name) AS Award_Count 
+FROM Individual_Award_Wins 
+JOIN Player_Position ON Individual_Award_Wins.Player_ID = Player_Position.Player_ID WHERE Individual_Award_Wins.Year < 2024 AND Individual_Award_Wins.Year > 2018 
+GROUP BY Player_Position.position 
 ORDER BY Award_Count DESC;
 
--- Medium 4: Managers ranked by wins per year at their club
-SELECT m.Name AS Manager_Name,
-       m.Club_Name,
-       m.Years_Managed,
-       c.Number_Of_Wins,
-       (c.Number_Of_Wins / m.Years_Managed) AS Wins_Per_Year
-FROM Manager_Manages AS m
-JOIN Club_Teams_Belongs_To AS c ON m.Club_Name = c.Name
-WHERE m.Years_Managed > 2
+--Medium Query 3: Find manager name, club, and years managed for managers with more than 2 years. Order by increasing number of wins
+SELECT m.Name AS Manager_Name, m.Club_Name, m.Years_Managed, 
+c.Number_Of_Wins, (c.Number_Of_Wins / m.Years_Managed) AS Wins_Per_Year 
+FROM Manager_Manages as m 
+JOIN Club_Teams_Belongs_To AS c ON m.Club_Name = c.Name 
+WHERE m.Years_Managed > 2 
 ORDER BY Wins_Per_Year DESC;
 
--- Medium 5: Players who have won at least one individual award
-SELECT ppf.Name,
-       ppf.Club_Name,
-       ppf.Goals,
-       COUNT(*) AS Awards_Won
-FROM Player_Plays_For ppf
-JOIN Individual_Award_Wins iaw ON ppf.Player_ID = iaw.Player_ID
-GROUP BY ppf.Player_ID, ppf.Name, ppf.Club_Name, ppf.Goals
-ORDER BY Awards_Won DESC, ppf.Goals DESC
-LIMIT 10;
-
-
--- ============================================================
--- HARD QUERIES
--- ============================================================
-
--- Hard 1: Top scorer per league (correlated subquery)
+--Hard Query 1: Find players name, clubs, league name, and number of goals for the top goal scorer in each league
 SELECT ppf.Name, ppf.Club_Name, ctb.League_Name, ppf.Goals
 FROM Player_Plays_For ppf
 JOIN Club_Teams_Belongs_To ctb ON ppf.Club_Name = ctb.Name
@@ -91,7 +50,7 @@ WHERE ppf.Goals = (
 )
 ORDER BY ppf.Goals DESC;
 
--- Hard 2: Clubs winning more away than at home (CTE)
+-- Hard Query 2: Find clubs that win more away than at home
 WITH home_wins AS (
     SELECT Home_Team AS Club, COUNT(*) AS wins
     FROM Game
@@ -113,7 +72,8 @@ JOIN away_wins a ON h.Club = a.Club
 WHERE a.wins > h.wins
 ORDER BY Advantage DESC;
 
--- Hard 3: Premier League 2024/25 standings (CTE aggregating home + away separately)
+
+-- Hard Query 3: Show the Premier League 2024/25 standings ordered from most to least points
 WITH sg AS (
     SELECT * FROM Game
     WHERE League_Name = 'Premier League'
@@ -144,3 +104,4 @@ SELECT h.Club,
        (h.W+a.W)*3 + (h.D+a.D) AS Pts
 FROM home h JOIN away a USING(Club)
 ORDER BY Pts DESC, GD DESC, GF DESC;
+
