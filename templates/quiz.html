@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Which Club Should You Support? — Pitch Perfect{% endblock %}
+{% block content %}
+
+<div class="text-center mb-4">
+  <h2 class="fw-bold">⚽ Which Club Should You Support?</h2>
+  <p class="text-muted">Answer 4 questions and we'll match you to your perfect club.</p>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-md-7">
+<form method="post" action="/quiz/result">
+
+  <!-- Q1 -->
+  <div class="card mb-3">
+    <div class="card-header">1. What's your style of football?</div>
+    <div class="card-body d-flex flex-column gap-2">
+      <label class="quiz-option">
+        <input type="radio" name="style" value="attack" required>
+        <span>⚔️ Attack, attack, attack — goals and chaos</span>
+      </label>
+      <label class="quiz-option">
+        <input type="radio" name="style" value="defense">
+        <span>🛡️ Solid at the back — clean sheets first</span>
+      </label>
+      <label class="quiz-option">
+        <input type="radio" name="style" value="balanced">
+        <span>⚖️ Balanced — win with style</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="card mb-3">
+    <div class="card-header">2. What kind of club are you?</div>
+    <div class="card-body d-flex flex-column gap-2">
+      <label class="quiz-option">
+        <input type="radio" name="size" value="giant" required>
+        <span>👑 Established giant — silverware every season</span>
+      </label>
+      <label class="quiz-option">
+        <input type="radio" name="size" value="underdog">
+        <span>🐴 Scrappy underdog — nobody believes in us</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="card mb-3">
+    <div class="card-header">3. Which league calls to you?</div>
+    <div class="card-body d-flex flex-column gap-2">
+      {% for l in leagues %}
+      <label class="quiz-option">
+        <input type="radio" name="league" value="{{ l }}" required>
+        <span>{{ l }}</span>
+      </label>
+      {% endfor %}
+      <label class="quiz-option">
+        <input type="radio" name="league" value="any">
+        <span>🎲 Surprise me — any league</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="card mb-4">
+    <div class="card-header">4. Where do you come alive?</div>
+    <div class="card-body d-flex flex-column gap-2">
+      <label class="quiz-option">
+        <input type="radio" name="home_pref" value="home" required>
+        <span>🏟️ Home fortress — the crowd is our 12th man</span>
+      </label>
+      <label class="quiz-option">
+        <input type="radio" name="home_pref" value="away">
+        <span>✈️ Road warriors — we love the away end</span>
+      </label>
+      <label class="quiz-option">
+        <input type="radio" name="home_pref" value="any">
+        <span>🤷 Doesn't matter — we win everywhere</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="text-center">
+    <button type="submit" class="btn btn-primary btn-lg px-5">Find My Club ⚽</button>
+  </div>
+
+</form>
+</div>
+</div>
+
+<style>
+  .quiz-option {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .quiz-option:hover { background: var(--surface2); border-color: var(--accent); }
+  .quiz-option input[type=radio] { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+  .quiz-option span { color: var(--text); font-size: .95rem; }
+</style>
+
+{% endblock %}

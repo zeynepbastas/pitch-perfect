@@ -364,5 +364,105 @@ def favorites():
     conn.close()
     return render_template('favorites.html', players=players, clubs=clubs)
 
+# ── Quiz ──────────────────────────────────────────────────────────────────────
+
+@app.route('/quiz')
+def quiz():
+    return render_template('quiz.html', leagues=LEAGUES)
+
+@app.route('/quiz/result', methods=['POST'])
+def quiz_result():
+    style     = request.form.get('style', 'balanced')
+    size      = request.form.get('size', 'giant')
+    league    = request.form.get('league', 'any')
+    home_pref = request.form.get('home_pref', 'any')
+
+    conn = db()
+    clubs = conn.execute("""
+        WITH home_stats AS (
+            SELECT Home_Team AS Club,
+                   COUNT(*) AS hg,
+                   SUM(Home_Score) AS hgf,
+                   SUM(Away_Score) AS hga,
+                   SUM(CASE WHEN Winning_team=Home_Team THEN 1 ELSE 0 END) AS hw
+            FROM Game GROUP BY Home_Team
+        ),
+        away_stats AS (
+            SELECT Away_Team AS Club,
+                   COUNT(*) AS ag,
+                   SUM(Away_Score) AS agf,
+                   SUM(Home_Score) AS aga,
+                   SUM(CASE WHEN Winning_team=Away_Team THEN 1 ELSE 0 END) AS aw
+            FROM Game GROUP BY Away_Team
+        )
+        SELECT c.Name, c.League_Name, c.Location, c.Number_Of_Wins,
+               h.hg + a.ag  AS total_games,
+               h.hgf + a.agf AS total_gf,
+               h.hga + a.aga AS total_ga,
+               h.hw + a.aw   AS total_wins,
+               h.hw AS home_wins, h.hg AS home_games,
+               a.aw AS away_wins, a.ag AS away_games
+        FROM Club_Teams_Belongs_To c
+        JOIN home_stats h ON c.Name = h.Club
+        JOIN away_stats a ON c.Name = a.Club
+    """).fetchall()
+    conn.close()
+
+    if league != 'any':
+        clubs = [c for c in clubs if c['League_Name'] == league]
+
+    scored = []
+    for c in clubs:
+        tg = c['total_games'] or 1
+        hg = c['home_games'] or 1
+        ag = c['away_games'] or 1
+        gf_pg  = c['total_gf'] / tg
+        ga_pg  = c['total_ga'] / tg
+        wr     = c['total_wins'] / tg
+        hwr    = c['home_wins'] / hg
+        awr    = c['away_wins'] / ag
+
+        score = 0
+        if style == 'attack':   score += gf_pg * 4
+        elif style == 'defense':score += (1 / (ga_pg + 0.1)) * 4
+        else:                   score += (gf_pg - ga_pg) * 3
+
+        if size == 'giant':     score += wr * 3
+        elif size == 'underdog':score += (1 - wr) * 3
+
+        if home_pref == 'home': score += hwr * 2
+        elif home_pref == 'away':score += awr * 2
+
+        scored.append((score, dict(c)))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    best = scored[0][1] if scored else None
+
+    # Build a personalised reason string
+    reasons = []
+    if style == 'attack':
+        reasons.append(f"they score {best['total_gf']//(best['total_games'] or 1)} goals per game on average")
+    elif style == 'defense':
+        reasons.append(f"they concede only {best['total_ga']//(best['total_games'] or 1)} goals per game")
+    else:
+        gd = best['total_gf'] - best['total_ga']
+        reasons.append(f"they have a goal difference of +{gd}" if gd >= 0 else f"they play a balanced game")
+
+    if size == 'giant':
+        reasons.append(f"with {best['Number_Of_Wins']} all-time wins they're a true powerhouse")
+    elif size == 'underdog':
+        reasons.append("they're a scrappy club that punches above their weight")
+
+    if home_pref == 'home':
+        pct = round(best['home_wins'] / (best['home_games'] or 1) * 100)
+        reasons.append(f"their home record is fierce — {pct}% win rate at {best['Location'] or 'home'}")
+    elif home_pref == 'away':
+        pct = round(best['away_wins'] / (best['away_games'] or 1) * 100)
+        reasons.append(f"they thrive on the road with a {pct}% away win rate")
+
+    reason = ", and ".join(reasons) + "."
+    return render_template('quiz_result.html', club=best, reason=reason,
+                           style=style, size=size, league=league, home_pref=home_pref)
+
 if __name__ == '__main__':
     app.run(debug=True)

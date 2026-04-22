@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Your Club — Pitch Perfect{% endblock %}
+{% block content %}
+
+<div class="text-center mb-4">
+  <p class="text-muted mb-1">Based on your answers, your club is...</p>
+  <h1 class="fw-bold display-4" style="color: var(--accent)">{{ club.Name }}</h1>
+  <p class="text-muted">{{ club.League_Name }}{% if club.Location %} · {{ club.Location }}{% endif %}</p>
+</div>
+
+<div class="row justify-content-center g-4 mb-4">
+
+  <!-- Why you matched -->
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header">⚽ Why {{ club.Name }}?</div>
+      <div class="card-body">
+        <p style="font-size: 1.05rem;">{{ reason }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Club stats -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">📊 Club Stats</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tr><td class="text-muted ps-3">All-Time Wins</td><td class="fw-bold">{{ club.Number_Of_Wins }}</td></tr>
+          <tr><td class="text-muted ps-3">Goals Scored</td><td class="fw-bold">{{ club.total_gf }}</td></tr>
+          <tr><td class="text-muted ps-3">Goals Conceded</td><td>{{ club.total_ga }}</td></tr>
+          <tr><td class="text-muted ps-3">Total Games</td><td>{{ club.total_games }}</td></tr>
+          <tr>
+            <td class="text-muted ps-3">Win Rate</td>
+            <td class="fw-bold gd-pos">{{ ((club.total_wins / club.total_games) * 100) | round(1) }}%</td>
+          </tr>
+          <tr>
+            <td class="text-muted ps-3">Home Win Rate</td>
+            <td>{{ ((club.home_wins / club.home_games) * 100) | round(1) }}%</td>
+          </tr>
+          <tr>
+            <td class="text-muted ps-3">Away Win Rate</td>
+            <td>{{ ((club.away_wins / club.away_games) * 100) | round(1) }}%</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="text-center d-flex gap-3 justify-content-center">
+  <a href="/clubs/{{ club.Name }}" class="btn btn-primary">View Club Profile</a>
+  <a href="/quiz" class="btn btn-outline-secondary">Try Again</a>
+</div>
+
+{% endblock %}
