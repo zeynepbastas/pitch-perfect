@@ -35,7 +35,12 @@
         <table class="table table-sm mb-0">
           <tr><td class="text-muted">League</td><td>{{ club['League_Name'] }}</td></tr>
           <tr><td class="text-muted">Stadium</td><td>{{ club['Location'] or '—' }}</td></tr>
-          <tr><td class="text-muted">Total Wins</td><td class="fw-bold">{{ club['Number_Of_Wins'] }}</td></tr>
+          {% if record %}
+          <tr><td class="text-muted">Games</td><td>{{ record['Games'] }}</td></tr>
+          <tr><td class="text-muted">Record</td><td><span class="text-success">{{ record['Wins'] }}W</span> / {{ record['Draws'] }}D / <span class="text-danger">{{ record['Losses'] }}L</span></td></tr>
+          <tr><td class="text-muted">Goals</td><td>{{ record['Goals_For'] }} for / {{ record['Goals_Against'] }} against</td></tr>
+          <tr><td class="text-muted">Goal Diff</td><td class="fw-bold {% if record['Goal_Diff'] > 0 %}text-success{% elif record['Goal_Diff'] < 0 %}text-danger{% endif %}">{{ '+' if record['Goal_Diff'] > 0 else '' }}{{ record['Goal_Diff'] }}</td></tr>
+          {% endif %}
         </table>
       </div>
     </div>

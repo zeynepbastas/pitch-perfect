@@ -190,6 +190,10 @@ def club_profile(name):
     if not club:
         conn.close()
         return "Club not found", 404
+    record = conn.execute(
+        "SELECT Games, Wins, Draws, Losses, Goals_For, Goals_Against, Goal_Diff FROM vw_club_record WHERE Name=?",
+        (name,)
+    ).fetchone()
     managers = conn.execute(
         "SELECT Name, Years_Managed FROM Manager_Manages WHERE Club_Name=? ORDER BY Years_Managed DESC",
         (name,)
@@ -210,7 +214,7 @@ def club_profile(name):
             (session['user_id'], name)
         ).fetchone() is not None
     conn.close()
-    return render_template('club.html', club=club, managers=managers,
+    return render_template('club.html', club=club, record=record, managers=managers,
                            top_players=top_players, recent_games=recent_games,
                            is_saved=is_saved)
 
