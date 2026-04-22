@@ -7,48 +7,99 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    body { background: #0d1117; color: #e6edf3; }
-    .navbar { background: #161b22 !important; border-bottom: 1px solid #30363d; }
-    .navbar-brand { font-weight: 700; font-size: 1.3rem; color: #58a6ff !important; letter-spacing: 1px; }
-    .nav-link { color: #8b949e !important; }
-    .nav-link:hover, .nav-link.active { color: #e6edf3 !important; }
-    .card { background: #161b22; border: 1px solid #30363d; }
-    .card-header { background: #1c2128; border-bottom: 1px solid #30363d; font-weight: 600; }
-    .table { color: #e6edf3; }
-    .table thead th { background: #1c2128; border-color: #30363d; color: #8b949e; font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; }
-    .table td, .table th { border-color: #21262d; vertical-align: middle; }
-    .table-hover tbody tr:hover { background: #1c2128; }
-    .table-striped tbody tr:nth-of-type(odd) { background: rgba(255,255,255,.02); }
-    .badge-league { font-size: .72rem; padding: .3em .6em; border-radius: 4px; }
-    .badge-pl  { background: #38003c; color: #fff; }
-    .badge-ll  { background: #c8102e; color: #fff; }
-    .badge-sa  { background: #024494; color: #fff; }
-    .badge-bl  { background: #d20515; color: #fff; }
-    .badge-l1  { background: #003899; color: #fff; }
+    /* ── Pitch Green Theme ───────────────────────────────────────────── */
+    :root {
+      --bg:         #080f0a;
+      --surface:    #0d1f12;
+      --surface2:   #112918;
+      --border:     #1a3d22;
+      --accent:     #3a9e5f;
+      --accent2:    #2d7a4a;
+      --text:       #e8f0ea;
+      --text-muted: #7a9e83;
+      --link:       #52a86e;
+      --link-hover: #7ac48a;
+    }
+    body { background: var(--bg); color: var(--text); }
+
+    /* Navbar */
+    .navbar { background: var(--surface) !important; border-bottom: 1px solid var(--border); }
+    .navbar-brand { font-weight: 800; font-size: 1.3rem; color: var(--accent) !important; letter-spacing: 1px; }
+    .nav-link { color: var(--text-muted) !important; }
+    .nav-link:hover, .nav-link.active { color: var(--text) !important; }
+
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); }
+    .card-header { background: var(--surface2); border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text); }
+    .card-body { color: var(--text); }
+
+    /* Tables */
+    .table { color: var(--text); }
+    .table thead th { background: var(--surface2); border-color: var(--border); color: var(--text-muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; }
+    .table td, .table th { border-color: var(--border); vertical-align: middle; }
+    .table-hover tbody tr:hover { background: var(--surface2); color: var(--text); }
+    .table-striped tbody tr:nth-of-type(odd) { background: rgba(34,197,94,.04); }
+
+    /* Forms */
+    .form-control, .form-select { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
+    .form-control::placeholder { color: var(--text-muted); opacity: 1; }
+    .form-control:focus, .form-select:focus { background: var(--bg); color: var(--text); border-color: var(--accent); box-shadow: 0 0 0 .2rem rgba(34,197,94,.2); }
+    .form-select option { background: var(--surface); color: var(--text); }
+
+    /* Buttons */
+    .btn-primary { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+    .btn-primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-outline-secondary { border-color: var(--border); color: var(--text-muted); }
+    .btn-outline-secondary:hover { background: var(--surface2); color: var(--text); border-color: var(--text-muted); }
+    .btn-outline-danger { color: #f87171; border-color: #f87171; }
+    .btn-outline-danger:hover { background: #f87171; color: #fff; }
+    .btn-danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .btn-sm { font-size: .8rem; }
+
+    /* Links */
+    a { color: var(--link); text-decoration: none; }
+    a:hover { color: var(--link-hover); text-decoration: underline; }
+
+    /* Alert */
+    .alert-danger { background: #3b0d0d; border-color: #7f1d1d; color: #fca5a5; }
+
+    /* League badges */
+    .badge-league { font-size: .72rem; padding: .3em .6em; border-radius: 4px; font-weight: 600; }
+    .badge-pl { background: #38003c; color: #fff; }
+    .badge-ll { background: #c8102e; color: #fff; }
+    .badge-sa { background: #024494; color: #fff; }
+    .badge-bl { background: #d20515; color: #fff; }
+    .badge-l1 { background: #003899; color: #fff; }
+
+    /* Stat cards */
     .stat-card { text-align: center; padding: 1.5rem; }
-    .stat-number { font-size: 2.4rem; font-weight: 700; color: #58a6ff; }
-    .stat-label  { color: #8b949e; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
-    .section-title { color: #8b949e; font-size: .8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: .75rem; }
-    .form-control, .form-select { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; }
-    .form-control:focus, .form-select:focus { background: #0d1117; color: #e6edf3; border-color: #58a6ff; box-shadow: 0 0 0 .2rem rgba(88,166,255,.15); }
-    .form-select option { background: #161b22; }
-    .btn-primary { background: #1f6feb; border-color: #1f6feb; }
-    .btn-outline-secondary { border-color: #30363d; color: #8b949e; }
-    .btn-outline-secondary:hover { background: #21262d; color: #e6edf3; border-color: #8b949e; }
-    a { color: #58a6ff; text-decoration: none; }
-    a:hover { color: #79c0ff; text-decoration: underline; }
-    .rank-1 { color: #ffd700; font-weight: 700; }
-    .rank-2 { color: #c0c0c0; font-weight: 700; }
-    .rank-3 { color: #cd7f32; font-weight: 700; }
-    .gd-pos { color: #3fb950; }
-    .gd-neg { color: #f85149; }
-    .zone-cl  { border-left: 3px solid #58a6ff !important; }
-    .zone-el  { border-left: 3px solid #3fb950 !important; }
-    .zone-rel { border-left: 3px solid #f85149 !important; }
-    .result-w { color: #3fb950; font-weight: 700; }
-    .result-d { color: #8b949e; }
-    .result-l { color: #f85149; }
-    footer { border-top: 1px solid #21262d; color: #484f58; font-size: .8rem; }
+    .stat-number { font-size: 2.4rem; font-weight: 700; color: var(--accent); }
+    .stat-label  { color: var(--text-muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* Rankings */
+    .rank-1 { color: #fbbf24; font-weight: 700; }
+    .rank-2 { color: #d1d5db; font-weight: 700; }
+    .rank-3 { color: #d97706; font-weight: 700; }
+
+    /* Goal difference */
+    .gd-pos { color: var(--accent); font-weight: 600; }
+    .gd-neg { color: #f87171; font-weight: 600; }
+
+    /* Standings zones */
+    .zone-cl  { border-left: 3px solid #60a5fa !important; }
+    .zone-el  { border-left: 3px solid var(--accent) !important; }
+    .zone-rel { border-left: 3px solid #f87171 !important; }
+
+    /* Match results */
+    .result-w { color: var(--accent); font-weight: 700; }
+    .result-d { color: var(--text-muted); }
+    .result-l { color: #f87171; }
+
+    /* Text helpers */
+    .text-muted { color: var(--text-muted) !important; }
+
+    /* Footer */
+    footer { border-top: 1px solid var(--border); color: var(--text-muted); font-size: .8rem; }
   </style>
 </head>
 <body>
